@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ninja Math Mission - ม.3</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;font-family:Arial,"Noto Sans Thai",sans-serif;
+ background:radial-gradient(circle at top,#263238,#080b10 70%);
+ color:#fff;min-height:100vh;overflow-x:hidden;
+}
+body:before{
+ content:"";position:fixed;inset:0;pointer-events:none;opacity:.12;
+ background:repeating-linear-gradient(135deg,transparent 0 18px,#ff6b00 19px 21px);
+}
+.container{max-width:850px;margin:auto;padding:18px}
+.header{
+ background:linear-gradient(135deg,#151b24,#303844);
+ border:2px solid #ff8c00;border-radius:22px;padding:18px;
+ box-shadow:0 0 25px #ff6b0040;text-align:center;
+}
+h1{margin:0;font-size:clamp(28px,7vw,48px);color:#ff9d19;text-shadow:3px 3px #8b2500}
+.subtitle{margin:6px 0;color:#ddd}
+.stats{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
+.stat{background:#0c1118;border:1px solid #56616d;padding:8px 13px;border-radius:999px}
+.progress{height:12px;background:#111;border-radius:99px;margin:15px 0;overflow:hidden;border:1px solid #555}
+.bar{height:100%;width:0;background:linear-gradient(90deg,#ff5a00,#ffd000);transition:.5s}
+.card{
+ margin-top:18px;background:rgba(19,25,34,.96);border:2px solid #424c58;
+ border-radius:24px;padding:22px;box-shadow:0 10px 40px #0008;
+ animation:cardIn .45s ease;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(25px) scale(.97)}to{opacity:1;transform:none}}
+.question{font-size:clamp(22px,5vw,31px);line-height:1.5;text-align:center;margin:8px 0 20px}
+.answers{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.answer{
+ border:2px solid #4d5865;background:#202832;color:white;border-radius:15px;
+ padding:15px;font-size:18px;cursor:pointer;transition:.18s;min-height:58px;
+}
+.answer:hover{transform:translateY(-3px);border-color:#ff9418;background:#293441}
+.answer.correct{background:#126b45;border-color:#48ffab;animation:pop .35s}
+.answer.wrong{background:#761d25;border-color:#ff5964;animation:shake .35s}
+@keyframes pop{50%{transform:scale(1.05)}}
+@keyframes shake{25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+.feedback{text-align:center;font-size:21px;min-height:32px;margin:16px 0}
+.next{
+ display:block;margin:auto;background:linear-gradient(135deg,#ff7a00,#ffb300);
+ color:#181818;border:0;border-radius:14px;padding:13px 30px;font-size:18px;font-weight:bold;
+ cursor:pointer;box-shadow:0 5px 18px #ff780050
+}
+.next:disabled{opacity:.35;cursor:not-allowed}
+.hidden{display:none}
+#start,#result{text-align:center}
+.startBtn{font-size:22px;padding:16px 38px}
+.rank{font-size:30px;color:#ffd34d;margin:10px}
+.jutsu{
+ position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+ pointer-events:none;font-weight:900;font-size:clamp(38px,12vw,100px);color:#fff;
+ text-shadow:0 0 18px #ff7b00,4px 4px #8b1e00;opacity:0;z-index:5;
+}
+.jutsu.show{animation:jutsu .8s ease}
+@keyframes jutsu{0%{opacity:0;transform:scale(.4) rotate(-8deg)}35%{opacity:1;transform:scale(1.15) rotate(2deg)}100%{opacity:0;transform:scale(1.4)}}
+.confetti{position:fixed;width:9px;height:16px;top:-20px;z-index:6;animation:fall 1.5s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+.small{font-size:14px;color:#aaa;margin-top:14px}
+@media(max-width:600px){.answers{grid-template-columns:1fr}.card{padding:16px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header class="header">
+<h1>🥷 NINJA MATH MISSION</h1>
+<div class="subtitle">ภารกิจคณิตศาสตร์ ม.3 — 20 ด่าน</div>
+<div class="stats">
+ <div class="stat">⚡ ด่าน <b id="qnum">1</b>/20</div>
+ <div class="stat">❤️ ชีวิต <b id="lives">3</b></div>
+ <div class="stat">🏆 คะแนน <b id="score">0</b></div>
+</div>
+<div class="progress"><div class="bar" id="bar"></div></div>
+</header>
+
+<section id="start" class="card">
+<h2>🍥 ภารกิจเริ่มต้น!</h2>
+<p>ตอบโจทย์คณิตศาสตร์ ม.3 ให้ครบ 20 ข้อ<br>ตอบถูกสะสมคะแนน และปลดปล่อยพลังนินจา!</p>
+<button class="next startBtn" onclick="startGame()">เริ่มภารกิจ ⚡</button>
+<p class="small">มีเฉลยหลังตอบ และมีเอฟเฟกต์เมื่อถูก/ผิด</p>
+</section>
+
+<section id="game" class="card hidden">
+<div class="question" id="question"></div>
+<div class="answers" id="answers"></div>
+<div class="feedback" id="feedback"></div>
+<button class="next" id="nextBtn" onclick="nextQuestion()" disabled>ไปข้อถัดไป ➜</button>
+</section>
+
+<section id="result" class="card hidden">
+<h2>🏯 ภารกิจสำเร็จ!</h2>
+<div class="rank" id="rank"></div>
+<p id="finalText"></p>
+<button class="next startBtn" onclick="location.reload()">เล่นอีกครั้ง 🔄</button>
+</section>
+</div>
+<div class="jutsu" id="jutsu"></div>
+
+<script>
+const questions=[
+ {q:"จงแก้สมการ x² - 5x + 6 = 0",a:["x = 2, 3","x = -2, -3","x = 1, 6","x = -1, -6"],c:0},
+ {q:"จงแก้สมการ x² + 7x + 12 = 0",a:["x = 3, 4","x = -3, -4","x = -2, -6","x = 2, 6"],c:1},
+ {q:"ผลคูณของ (x + 3)(x - 4) คือข้อใด?",a:["x² - x - 12","x² + x - 12","x² - 7x + 12","x² + 7x - 12"],c:0},
+ {q:"ถ้า 2x + 6 = 18 แล้ว x เท่ากับเท่าไร?",a:["4","5","6","7"],c:2},
+ {q:"จงแยกตัวประกอบ x² - 9",a:["(x-9)(x+1)","(x-3)(x+3)","(x-3)²","(x+9)(x-1)"],c:1},
+ {q:"√144 มีค่าเท่าไร?",a:["10","11","12","14"],c:2},
+ {q:"ถ้า y² = 49 ค่า y ที่เป็นไปได้คือข้อใด?",a:["7 เท่านั้น","-7 เท่านั้น","7 และ -7","49 และ -49"],c:2},
+ {q:"(3x²)(2x³) เท่ากับข้อใด?",a:["6x⁵","5x⁶","6x⁶","6x⁹"],c:0},
+ {q:"สมการ x² = 16 มีคำตอบใด?",a:["4","-4","4 และ -4","16 และ -16"],c:2},
+ {q:"จงแยกตัวประกอบ x² + 5x + 6",a:["(x+1)(x+6)","(x+2)(x+3)","(x-2)(x-3)","(x+5)(x+1)"],c:1},
+ {q:"ถ้า 5x - 10 = 0 แล้ว x เท่ากับเท่าไร?",a:["-2","0","2","5"],c:2},
+ {q:"พื้นที่สี่เหลี่ยมจัตุรัสด้านยาว 8 ซม. เท่ากับเท่าไร?",a:["16","32","64","128"],c:2},
+ {q:"เส้นรอบวงกลมรัศมี 7 ซม. ใช้ π = 22/7 มีค่าเท่าไร?",a:["22","44","88","154"],c:1},
+ {q:"ค่าเฉลี่ยของ 4, 6, 8, 10 คือเท่าไร?",a:["6","7","8","9"],c:1},
+ {q:"ถ้า 3(x + 2) = 21 แล้ว x เท่ากับเท่าไร?",a:["5","6","7","8"],c:0},
+ {q:"2³ × 2² มีค่าเท่าไร?",a:["16","32","64","128"],c:1},
+ {q:"รากที่สองของ 225 คือเท่าไร?",a:["12","13","15","25"],c:2},
+ {q:"ถ้า a = 3 แล้ว 2a² + 1 มีค่าเท่าไร?",a:["7","13","19","21"],c:2},
+ {q:"อัตราส่วน 2:5 ถ้าจำนวนแรกเป็น 8 จำนวนที่สองคือเท่าไร?",a:["10","16","20","25"],c:2},
+ {q:"จงแก้สมการ x² - 8x + 16 = 0",a:["x = 2","x = 4","x = -4","x = 4 และ -4"],c:1}
+];
+
+let idx=0,score=0,lives=3,answered=false;
+function startGame(){
+ document.getElementById("start").classList.add("hidden");
+ document.getElementById("game").classList.remove("hidden");
+ showQuestion();
+}
+function showQuestion(){
+ answered=false;
+ document.getElementById("qnum").textContent=idx+1;
+ document.getElementById("score").textContent=score;
+ document.getElementById("lives").textContent=lives;
+ document.getElementById("bar").style.width=(idx/questions.length*100)+"%";
+ document.getElementById("feedback").textContent="";
+ const q=questions[idx];
+ document.getElementById("question").textContent=q.q;
+ const box=document.getElementById("answers");box.innerHTML="";
+ q.a.forEach((x,i)=>{
+  const b=document.createElement("button");b.className="answer";b.textContent=x;
+  b.onclick=()=>answer(i,b);box.appendChild(b);
+ });
+ document.getElementById("nextBtn").disabled=true;
+}
+function answer(i,btn){
+ if(answered)return;answered=true;
+ const q=questions[idx], buttons=[...document.querySelectorAll(".answer")];
+ buttons.forEach(b=>b.disabled=true);
+ if(i===q.c){
+  btn.classList.add("correct");score+=10;
+  document.getElementById("feedback").innerHTML="🔥 ถูกต้อง! +10 คะแนน";
+  showJutsu("🔥 RASENGAN!");
+  if(score%30===0)confetti();
+ }else{
+  btn.classList.add("wrong");buttons[q.c].classList.add("correct");
+  lives--;document.getElementById("lives").textContent=lives;
+  document.getElementById("feedback").innerHTML="❌ ยังไม่ถูก — คำตอบคือ <b>"+q.a[q.c]+"</b>";
+  showJutsu("💥 โดนสวน!");
+ }
+ document.getElementById("score").textContent=score;
+ document.getElementById("nextBtn").disabled=false;
+}
+function nextQuestion(){
+ idx++;
+ if(idx>=questions.length){finish();return}
+ showQuestion();
+}
+function finish(){
+ document.getElementById("game").classList.add("hidden");
+ document.getElementById("result").classList.remove("hidden");
+ document.getElementById("bar").style.width="100%";
+ let rank=score>=180?"🏆 โฮคาเงะนักคณิต":score>=140?"🥷 จูนินอัจฉริยะ":score>=100?"⚔️ เกะนินฝีมือดี":"🍥 นินจาฝึกหัด";
+ document.getElementById("rank").textContent=rank;
+ document.getElementById("finalText").innerHTML=`ได้ <b>${score}/200</b> คะแนน<br>เหลือ ❤️ ${lives} ชีวิต<br><br>${score>=140?"สุดยอด! พลังคณิตของนายแข็งแกร่งมาก!":"ฝึกต่ออีกนิด แล้วกลับมาทำลายสถิติให้ได้!"}`;
+ confetti();
+}
+function showJutsu(t){
+ const el=document.getElementById("jutsu");el.textContent=t;
+ el.classList.remove("show");void el.offsetWidth;el.classList.add("show");
+}
+function confetti(){
+ for(let i=0;i<35;i++){
+  const d=document.createElement("i");d.className="confetti";
+  d.style.left=Math.random()*100+"vw";
+  d.style.animationDelay=Math.random()*.5+"s";
+  d.style.transform=`rotate(${Math.random()*360}deg)`;
+  document.body.appendChild(d);setTimeout(()=>d.remove(),2200);
+ }
+}
+</script>
+</body>
+</html>
